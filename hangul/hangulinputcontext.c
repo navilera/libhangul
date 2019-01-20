@@ -21,7 +21,13 @@
 
 #include <stdlib.h>
 #include <string.h>
+
+#ifndef WIN
 #include <strings.h>
+#else
+#define strcasecmp _stricmp
+#endif
+
 #include <ctype.h>
 #include <inttypes.h>
 #include <limits.h>
@@ -1042,6 +1048,55 @@ flush:
     return false;
 }
 
+static ucschar
+hangul_ic_multikey_proc(HangulInputContext *hic, ucschar input_chr)
+{
+	const KeyMultiKeyTable* multi_key_table_iter = hic->keyboard->multiKey;
+	ucschar ret_chr = input_chr;
+
+
+	while (multi_key_table_iter->firstKey != 0)
+	{
+		if (input_chr == multi_key_table_iter->firstKey)
+		{
+			const KeyMultiKeyTable* selected_multi_key_row = multi_key_table_iter;
+			if (hic->buffer.jungseong)
+			{
+				if (hic->buffer.choseong == 0)
+				{
+					// erase jungseong because it should be shown jongseong only
+					hangul_ic_backspace(hic);
+				}
+
+				ret_chr = selected_multi_key_row->secondKey;
+			}
+
+			if (hic->buffer.jongseong)
+			{
+				if (hangul_keyboard_combine(hic->keyboard, 0, hic->buffer.jongseong, selected_multi_key_row->secondKey))
+				{
+					ret_chr = selected_multi_key_row->secondKey;
+				}
+				else if (hangul_keyboard_combine(hic->keyboard, 0, hic->buffer.jongseong, selected_multi_key_row->thirdKey))
+				{
+					ret_chr = selected_multi_key_row->thirdKey;
+				}
+				else
+				{
+					hangul_ic_backspace(hic);
+					ret_chr = selected_multi_key_row->thirdKey;
+				}
+			}
+
+			return ret_chr;
+		}
+		multi_key_table_iter++;
+	}
+
+	return input_chr;
+}
+
+
 /**
  * @ingroup hangulic
  * @brief 키 입력을 처리하여 실제로 한글 조합을 하는 함수
@@ -1080,12 +1135,22 @@ hangul_ic_process(HangulInputContext *hic, int ascii)
     hic->commit_string[0] = 0;
 
     c = hangul_keyboard_get_mapping(hic->keyboard, 0, ascii);
+
+	if (c == 0) {
+		return false;
+	}
+
     if (hic->on_translate != NULL)
 	hic->on_translate(hic, ascii, &c, hic->on_translate_data);
 
     if (ascii == '\b') {
 	return hangul_ic_backspace(hic);
     }
+
+	if (hic->keyboard->multiKey != NULL)
+	{
+		c = hangul_ic_multikey_proc(hic, c);
+	}
 
     int type = hangul_keyboard_get_type(hic->keyboard);
     switch (type) {

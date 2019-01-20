@@ -75,6 +75,7 @@ typedef struct _HangulKeyboard        HangulKeyboard;
 typedef struct _HangulCombination     HangulCombination;
 typedef struct _HangulBuffer          HangulBuffer;
 typedef struct _HangulInputContext    HangulInputContext;
+typedef struct _KeyMultiKeyTable	  KeyMultiKeyTable;
 
 enum {
     HANGUL_OUTPUT_SYLLABLE,

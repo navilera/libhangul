@@ -22,8 +22,11 @@
 
 #include <sys/types.h>
 #include <sys/stat.h>
+#ifndef WIN
 #include <unistd.h>
-
+#else
+#include <io.h>
+#endif
 #ifdef HAVE_MMAP
 #include <sys/mman.h>
 #endif
@@ -485,8 +488,13 @@ hanja_table_load(const char* filename)
     HanjaIndex* keytable;
     HanjaTable* table;
 
-    if (filename == NULL)
-	filename = LIBHANGUL_DEFAULT_HANJA_DIC;
+	if (filename == NULL) {
+		#ifndef WIN
+			filename = LIBHANGUL_DEFAULT_HANJA_DIC;
+		#else
+			filename = "c:\\Program Files\\NavilIME\\hanja\\hanja.txt";
+		#endif
+	}
 
     file = fopen(filename, "r");
     if (file == NULL) {

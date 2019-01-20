@@ -23,6 +23,45 @@
 #define countof(array) (sizeof (array) / sizeof ((array)[0]))
 #endif
 
+struct _KeyMultiKeyTable {
+	ucschar firstKey;
+	ucschar secondKey;
+	ucschar thirdKey;
+};
+
+struct _HangulCombinationItem {
+	uint32_t key;
+	ucschar code;
+};
+typedef struct _HangulCombinationItem HangulCombinationItem;
+
+struct _HangulCombination {
+	size_t size;
+	size_t size_alloced;
+	HangulCombinationItem *table;
+
+	bool is_static;
+};
+
+struct _HangulKeyboard {
+	char* id;
+	char* name;
+	ucschar* table[4];
+	HangulCombination* combination[4];
+
+	int type;
+
+	const KeyMultiKeyTable* multiKey;
+
+	bool is_static;
+};
+
+typedef struct _HangulKeyboardList {
+	size_t n;
+	size_t nalloced;
+	HangulKeyboard** keyboards;
+} HangulKeyboardList;
+
 ucschar hangul_jongseong_get_diff(ucschar prevjong, ucschar jong);
 
 ucschar hangul_choseong_to_jongseong(ucschar ch);

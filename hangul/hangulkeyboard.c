@@ -62,38 +62,15 @@
 
 #define HANGUL_KEYBOARD_TABLE_SIZE 0x80
 
-typedef struct _HangulCombinationItem HangulCombinationItem;
-
-struct _HangulCombinationItem {
-    uint32_t key;
-    ucschar code;
-};
-
-struct _HangulCombination {
-    size_t size;
-    size_t size_alloced;
-    HangulCombinationItem *table;
-
-    bool is_static;
-};
-
-struct _HangulKeyboard {
-    char* id;
-    char* name;
-    ucschar* table[4];
-    HangulCombination* combination[4];
-
-    int type;
-    bool is_static;
-};
-
-typedef struct _HangulKeyboardList {
-    size_t n;
-    size_t nalloced;
-    HangulKeyboard** keyboards;
-} HangulKeyboardList;
 
 #include "hangulkeyboard.h"
+
+static const HangulCombination hangul_combination_318Na = {
+	countof(hangul_combination_table_318Na),
+	countof(hangul_combination_table_318Na),
+	(HangulCombinationItem*)hangul_combination_table_318Na,
+	true
+};
 
 static const HangulCombination hangul_combination_default = {
     countof(hangul_combination_table_default),
@@ -123,12 +100,23 @@ static const HangulCombination hangul_combination_ahn = {
     true
 };
 
+static const HangulKeyboard hangul_keyboard_318Na = {
+	(char*)"318Na",
+	(char*)N_("Sebeolsik 318Na"),
+	{ (ucschar*)hangul_keyboard_table_318Na, NULL, NULL, NULL },
+	{ (HangulCombination*)&hangul_combination_318Na, NULL, NULL, NULL },
+	HANGUL_KEYBOARD_TYPE_JASO,
+	hangul_multikey_table_318Na,
+	true
+};
+
 static const HangulKeyboard hangul_keyboard_2 = {
     (char*)"2",
     (char*)N_("Dubeolsik"),
     { (ucschar*)hangul_keyboard_table_2, NULL, NULL, NULL },
     { (HangulCombination*)&hangul_combination_default, NULL, NULL, NULL },
     HANGUL_KEYBOARD_TYPE_JAMO,
+	NULL,
     true
 };
 
@@ -138,6 +126,7 @@ static const HangulKeyboard hangul_keyboard_2y = {
     { (ucschar*)hangul_keyboard_table_2y, NULL, NULL, NULL },
     { (HangulCombination*)&hangul_combination_full, NULL, NULL, NULL },
     HANGUL_KEYBOARD_TYPE_JAMO_YET,
+	NULL,
     true
 };
 
@@ -147,6 +136,7 @@ static const HangulKeyboard hangul_keyboard_32 = {
     { (ucschar*)hangul_keyboard_table_32, NULL, NULL, NULL },
     { (HangulCombination*)&hangul_combination_default, NULL, NULL, NULL },
     HANGUL_KEYBOARD_TYPE_JASO,
+	NULL,
     true
 };
 
@@ -156,6 +146,7 @@ static const HangulKeyboard hangul_keyboard_390 = {
     { (ucschar*)hangul_keyboard_table_390, NULL, NULL, NULL },
     { (HangulCombination*)&hangul_combination_default, NULL, NULL, NULL },
     HANGUL_KEYBOARD_TYPE_JASO,
+	NULL,
     true
 };
 
@@ -165,6 +156,7 @@ static const HangulKeyboard hangul_keyboard_3final = {
     { (ucschar*)hangul_keyboard_table_3final, NULL, NULL, NULL },
     { (HangulCombination*)&hangul_combination_default, NULL, NULL, NULL },
     HANGUL_KEYBOARD_TYPE_JASO,
+	NULL,
     true
 };
 
@@ -174,6 +166,7 @@ static const HangulKeyboard hangul_keyboard_3sun = {
     { (ucschar*)hangul_keyboard_table_3sun, NULL, NULL, NULL },
     { (HangulCombination*)&hangul_combination_default, NULL, NULL, NULL },
     HANGUL_KEYBOARD_TYPE_JASO,
+	NULL,
     true
 };
 
@@ -183,6 +176,7 @@ static const HangulKeyboard hangul_keyboard_3yet = {
     { (ucschar*)hangul_keyboard_table_3yet, NULL, NULL, NULL },
     { (HangulCombination*)&hangul_combination_full, NULL, NULL, NULL },
     HANGUL_KEYBOARD_TYPE_JASO_YET,
+	NULL,
     true
 };
 
@@ -192,6 +186,7 @@ static const HangulKeyboard hangul_keyboard_romaja = {
     { (ucschar*)hangul_keyboard_table_romaja, NULL, NULL, NULL },
     { (HangulCombination*)&hangul_combination_romaja, NULL, NULL, NULL },
     HANGUL_KEYBOARD_TYPE_ROMAJA,
+	NULL,
     true
 };
 
@@ -201,10 +196,12 @@ static const HangulKeyboard hangul_keyboard_ahn = {
     { (ucschar*)hangul_keyboard_table_ahn, NULL, NULL, NULL },
     { (HangulCombination*)&hangul_combination_ahn, NULL, NULL, NULL },
     HANGUL_KEYBOARD_TYPE_JASO,
+	NULL,
     true
 };
 
 static const HangulKeyboard* hangul_builtin_keyboards[] = {
+	&hangul_keyboard_318Na,
     &hangul_keyboard_2,
     &hangul_keyboard_2y,
     &hangul_keyboard_390,
