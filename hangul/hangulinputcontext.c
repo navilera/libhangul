@@ -31,6 +31,7 @@
 #include <ctype.h>
 #include <inttypes.h>
 #include <limits.h>
+#include <sys/time.h>
 
 #include "hangul-gettext.h"
 #include "hangul.h"
@@ -749,9 +750,74 @@ flush:
     return false;
 }
 
+static ucschar
+hangul_ic_convert_mutikey_jong_to_jung(HangulInputContext *hic, ucschar jong_chr)
+{
+	const KeyMultiKeyTable* multi_key_table_iter = hic->keyboard->multiKey;
+
+	while (multi_key_table_iter->firstKey != 0)
+	{
+		if (jong_chr == multi_key_table_iter->secondKey ||
+			jong_chr == multi_key_table_iter->thirdKey)
+		{
+			return multi_key_table_iter->firstKey;
+		}
+
+		multi_key_table_iter++;
+	}
+	// not found
+	return jong_chr;
+}
+
+// 한글 자소 입력 시간 간격을 측정하기 위함
+static struct timeval prev_key_input_time = {0};
+
 static bool
 hangul_ic_process_jaso(HangulInputContext *hic, ucschar ch)
 {
+	if (prev_key_input_time.tv_sec == 0) {
+		// 초기화
+		gettimeofday(&prev_key_input_time, NULL);
+	}
+	// 현재 시간
+	struct timeval curr_tv;
+	gettimeofday(&curr_tv, NULL);
+
+	/*
+	 * 직전 키보드 입력과 현재 키보드 입력이
+	 * 50ms 이하이면 두 키를 동시에 누른 것으로 간주 한다.
+	 * 이 상태에서 multiKey 자판이고 (그러니까 318 자판)
+	 * 직전 입력이 종성 + 현재 입력이 초성이면
+	 * 직전 종성을 지우고 직전 입력은 커밋
+	 * 현재 입력에 중성으로 입력을 바꾼다.
+	 */ 
+	if (hic->keyboard->multiKey != NULL) {	// 318 자판
+		if (prev_key_input_time.tv_sec != 0) {
+			struct timeval diff_tv;
+			timersub(&curr_tv, &prev_key_input_time, &diff_tv);
+			if ((diff_tv.tv_usec / 1000) < 50) {
+				// 동시 입력 상황에서 종성이 있을 때,
+				if (hic->buffer.jongseong) {
+					// 현재 입력이 초성이면
+					if (hangul_is_choseong(ch)) {
+						ucschar jong, jung;
+						//jong = hangul_ic_pop(hic); // pop이 의도한 대로 동작하지 않는다.
+						jong = hangul_ic_peek(hic); // 직전 종성이 뭔지 받아내고
+						hangul_ic_backspace(hic);	// 삭제
+						hangul_ic_save_commit_string(hic); // 커밋
+						jung = hangul_ic_convert_mutikey_jong_to_jung(hic, jong); // 타자가 의도 했던 중성을 찾아서
+						if (!hangul_ic_push(hic, jung)) { // 현재 입력에 넣음
+							return false;
+						}
+					}
+				} // 종성이 있을 때
+			} // 동시 입력 확인
+		}
+	} // 318 확인
+
+	// 시간 갱신
+	prev_key_input_time = curr_tv;
+
     if (hangul_is_choseong(ch)) {
 	if (hic->buffer.choseong == 0) {
 	    if (hic->option_auto_reorder) {
@@ -1053,7 +1119,6 @@ hangul_ic_multikey_proc(HangulInputContext *hic, ucschar input_chr)
 {
 	const KeyMultiKeyTable* multi_key_table_iter = hic->keyboard->multiKey;
 	ucschar ret_chr = input_chr;
-
 
 	while (multi_key_table_iter->firstKey != 0)
 	{

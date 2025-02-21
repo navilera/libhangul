@@ -22,3 +22,8 @@ Bug report:
 
 Web sites
  * Project page: https://github.com/libhangul/libhangul
+
+ 우분투나 민트 리눅스는 libhangul.so.1.0.0 파일을 /usr/lib/x86_64-linux-gnu/ 로 복사하면 됩니다.
+
+ libhangul.so.1.0.0은 libhangul/hangul/.libs에 있습니다.
+ libhangul/hangul/.libs는 make 하면 생깁니다.
